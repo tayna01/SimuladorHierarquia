@@ -1,0 +1,93 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI, Arial"
+skinparam class {
+    BackgroundColor PaleGreen
+    ArrowColor SeaGreen
+    BorderColor SeaGreen
+}
+
+enum TipoAcesso {
+    LEITURA
+    ESCRITA
+}
+
+enum PoliticaEscrita {
+    ESCRITA_DIRETA      ' Write-Through
+    ESCRITA_DE_RETORNO  ' Write-Back
+}
+
+enum PadraoAcesso {
+    SEQUENCIAL
+    ALEATORIO
+}
+
+abstract class ComponenteMemoria {
+  # nome: string
+  # latencia: int
+  # estatisticas: Estatisticas
+  # proximoNivel: ComponenteMemoria*
+  + {abstract} acessar(endereco: uint32_t, tipo: TipoAcesso): int
+  + imprimirEstatisticas(): void
+}
+
+class Cache {
+  - associatividade: int
+  - numConjuntos: int
+  - politicaEscrita: PoliticaEscrita
+  - conjuntos: vector<vector<LinhaCache>>
+  + acessar(endereco: uint32_t, tipo: TipoAcesso): int
+}
+
+class MemoriaPrincipal {
+  + acessar(endereco: uint32_t, tipo: TipoAcesso): int
+}
+
+class Processador {
+  - primeiroNivel: ComponenteMemoria*
+  - padrao: PadraoAcesso
+  + executar(): void
+}
+
+class Simulador {
+  - processador: Processador
+  - hierarquia: vector<unique_ptr<ComponenteMemoria>>
+  + construirHierarquia(): void
+  + executar(): void
+  + imprimirResultados(): void
+}
+
+class Estatisticas {
+  + acertosLeitura: int
+  + faltasLeitura: int
+  + acertosEscrita: int
+  + faltasEscrita: int
+  + totalLeituras: int
+  + totalEscritas: int
+}
+
+class LinhaCache {
+  + bitValidade: bool
+  + bitSujo: bool  ' Dirty Bit
+  + tag: uint32_t
+  + contadorLRU: int
+}
+
+ComponenteMemoria <|-- Cache
+ComponenteMemoria <|-- MemoriaPrincipal
+
+Simulador "1" *-- "1" Processador
+
+Simulador "1" o-- "*" ComponenteMemoria
+
+Processador "1" --> "1" ComponenteMemoria
+
+Cache ..> PoliticaEscrita
+Cache ..> LinhaCache
+Processador ..> PadraoAcesso
+ComponenteMemoria ..> Estatisticas
+ComponenteMemoria ..> TipoAcesso
+
+@enduml
