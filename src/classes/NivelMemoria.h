@@ -3,29 +3,33 @@
 
 #include <string>
 
-enum class TipoAcesso
-{
+// Enum para deixar o código mais legível
+enum class TipoAcesso {
     LEITURA,
     ESCRITA
 };
 
-class NivelMemoria
-{
+class NivelMemoria {
 public:
-    NivelMemoria(const std::string &nome, int latencia);
-
+    // Construtor
+    NivelMemoria(const std::string& nome, int latencia);
+    
+    // Destrutor virtual (essencial!)
     virtual ~NivelMemoria() = default;
 
+    // A função virtual pura que define o "contrato"
     virtual int acessar(unsigned int endereco, TipoAcesso tipo, int tempo_global) = 0;
 
-    void ligar_proximo_nivel(NivelMemoria *proximo);
-
+    // Método para conectar a hierarquia
+    void ligar_proximo_nivel(NivelMemoria* proximo);
+    
+    // Getter para o nome
     std::string get_nome() const;
 
 protected:
     std::string nome;
     int latencia;
-    NivelMemoria *proximo_nivel;
+    NivelMemoria* proximo_nivel;
 };
 
-#endif
+#endif // NIVELMEMORIA_H
