@@ -14,15 +14,12 @@ int main() {
     int tempo = 0;
 
     std::cout << "\n--- PRIMEIRO ACESSO (MISS COMPULSORIO) ---" << std::endl;
-    // Endereço 1000
     latencia_total += hierarquia->acessar(1000, TipoAcesso::LEITURA, tempo++);
     
     std::cout << "\n--- SEGUNDO ACESSO (DEVE SER HIT) ---" << std::endl;
-    // Acessando o mesmo endereço 1000 novamente
     latencia_total += hierarquia->acessar(1000, TipoAcesso::LEITURA, tempo++);
 
     std::cout << "\n--- TERCEIRO ACESSO (OUTRO MISS) ---" << std::endl;
-    // Endereço 20000, que deve mapear para um local diferente
     latencia_total += hierarquia->acessar(20000, TipoAcesso::LEITURA, tempo++);
     
     std::cout << "\n==========================================" << std::endl;
@@ -30,12 +27,10 @@ int main() {
     std::cout << "==========================================\n" << std::endl;
 
 
-    // --- 3. Imprimir Estatísticas ---
     l1->imprimir_estatisticas();
     std::cout << std::endl;
     ram->imprimir_estatisticas();
 
-    // --- 4. Limpar Memória ---
     delete l1;
     delete ram;
 
