@@ -1,93 +1,198 @@
-@startuml
+@startuml arquitetura
 skinparam classAttributeIconSize 0
 skinparam roundcorner 10
 skinparam shadowing false
 skinparam defaultFontName "Segoe UI, Arial"
 skinparam class {
-    BackgroundColor PaleGreen
-    ArrowColor SeaGreen
-    BorderColor SeaGreen
+  BackgroundColor PaleGreen
+  ArrowColor SeaGreen
+  BorderColor SeaGreen
 }
 
-enum TipoAcesso {
-    LEITURA
-    ESCRITA
+class Processor {
+  - MemoryLevel* firstLevel
+  - MemoryAccessPattern* accessPattern
+  - int totalCycles
+  + Processor()
+  + setMemoryHierarchy(MemoryLevel*) : void
+  + setAccessPattern(MemoryAccessPattern*) : void
+  + run() : void
+  + getTotalCycles() : int
 }
 
-enum PoliticaEscrita {
-    ESCRITA_DIRETA      ' Write-Through
-    ESCRITA_DE_RETORNO  ' Write-Back
+class MemoryHierarchy {
+  - vector<MemoryLevel*> levels
+  - Processor* processor
+  + MemoryHierarchy()
+  + addLevel(MemoryLevel*) : void
+  + setProcessor(Processor*) : void
+  + initialize() : void
+  + printStatistics() : void
 }
 
-enum PadraoAcesso {
-    SEQUENCIAL
-    ALEATORIO
+abstract class MemoryAccessPattern {
+  # int bufferSize
+  # int accessCount
+  # int currentAccess
+  + MemoryAccessPattern(int bufferSize, int accessCount)
+  + hasNext() : bool
+  + {abstract} getNextAddress() : uint64_t
+  + {abstract} isWrite() : bool
 }
 
-abstract class ComponenteMemoria {
-  # nome: string
-  # latencia: int
-  # estatisticas: Estatisticas
-  # proximoNivel: ComponenteMemoria*
-  + {abstract} acessar(endereco: uint32_t, tipo: TipoAcesso): int
-  + imprimirEstatisticas(): void
+class SequentialPattern {
+  - int stride
+  - uint64_t currentAddress
+  + SequentialPattern(int bufferSize, int accessCount, int stride)
+  + getNextAddress() : uint64_t
+  + isWrite() : bool
+}
+
+class RandomPattern {
+  - random_device rd
+  - mt19937 gen
+  + RandomPattern(int bufferSize, int accessCount)
+  + getNextAddress() : uint64_t
+  + isWrite() : bool
+}
+
+abstract class MemoryLevel {
+  # string name
+  # int latency
+  # MemoryLevel* nextLevel
+  # Statistics stats
+  + MemoryLevel(string name, int latency)
+  + setNextLevel(MemoryLevel*) : void
+  + {abstract} access(uint64_t address, bool isWrite) : AccessResult
+  + getLatency() : int
+  + getName() : string
+  + {abstract} printStatistics() : void
 }
 
 class Cache {
-  - associatividade: int
-  - numConjuntos: int
-  - politicaEscrita: PoliticaEscrita
-  - conjuntos: vector<vector<LinhaCache>>
-  + acessar(endereco: uint32_t, tipo: TipoAcesso): int
+  - int associativity
+  - int setSize
+  - int lineSize
+  - int numSets
+  - WritePolicy* writePolicy
+  - vector<CacheSet*> sets
+  - LRUReplacer* replacer
+  + Cache(string name, int latency, int associativity, int setSize, int lineSize, WritePolicy* policy)
+  + access(uint64_t address, bool isWrite) : AccessResult
+  + findLine(uint64_t address) : CacheLine*
+  + allocateLine(uint64_t address) : void
+  + updateLRU(int setIndex, int wayIndex) : void
+  + printStatistics() : void
+  - getSetIndex(uint64_t address) : int
+  - getTag(uint64_t address) : uint64_t
+  - getOffset(uint64_t address) : int
 }
 
-class MemoriaPrincipal {
-  + acessar(endereco: uint32_t, tipo: TipoAcesso): int
+class MainMemory {
+  - int readAccess
+  - int writeAccess
+  + MainMemory(string name, int latency)
+  + access(uint64_t address, bool isWrite) : AccessResult
+  + printStatistics() : void
 }
 
-class Processador {
-  - primeiroNivel: ComponenteMemoria*
-  - padrao: PadraoAcesso
-  + executar(): void
+
+class CacheSet {
+  - vector<CacheLine*> ways
+  - int associativity
+  + CacheSet(int associativity)
+  + findLine(uint64_t tag) : CacheLine*
+  + getLine(int wayIndex) : CacheLine*
+  + replaceLine(int wayIndex, uint64_t tag) : void
+  + isFull() : bool
 }
 
-class Simulador {
-  - processador: Processador
-  - hierarquia: vector<unique_ptr<ComponenteMemoria>>
-  + construirHierarquia(): void
-  + executar(): void
-  + imprimirResultados(): void
+class CacheLine {
+  - uint64_t tag
+  - bool valid
+  - bool dirty
+  - vector<uint8_t> data
+  + CacheLine(int lineSize)
+  + isValid() : bool
+  + isDirty() : bool
+  + getTag() : uint64_t
+  + setTag(uint64_t tag) : void
+  + setValid(bool valid) : void
+  + setDirty(bool dirty) : void
+  + invalidate() : void
 }
 
-class Estatisticas {
-  + acertosLeitura: int
-  + faltasLeitura: int
-  + acertosEscrita: int
-  + faltasEscrita: int
-  + totalLeituras: int
-  + totalEscritas: int
+
+class LRUReplacer {
+  - map<int, list<int>> lruLists
+  + LRUReplacer()
+  + access(int setIndex, int wayIndex) : void
+  + getVictim(int setIndex) : int
+  + update(int setIndex, int wayIndex) : void
 }
 
-class LinhaCache {
-  + bitValidade: bool
-  + bitSujo: bool  ' Dirty Bit
-  + tag: uint32_t
-  + contadorLRU: int
+abstract class WritePolicy {
+  + {abstract} onWrite(Cache* cache, uint64_t address) : void
+  + {abstract} onEviction(Cache* cache, CacheLine* line) : void
 }
 
-ComponenteMemoria <|-- Cache
-ComponenteMemoria <|-- MemoriaPrincipal
+class WriteThroughPolicy {
+  + onWrite(Cache* cache, uint64_t address) : void
+  + onEviction(Cache* cache, CacheLine* line) : void
+}
 
-Simulador "1" *-- "1" Processador
+class WriteBackPolicy {
+  + onWrite(Cache* cache, uint64_t address) : void
+  + onEviction(Cache* cache, CacheLine* line) : void
+}
 
-Simulador "1" o-- "*" ComponenteMemoria
+class Statistics {
+  - int readAccesses
+  - int writeAccesses
+  - int hits
+  - int misses
+  + Statistics()
+  + recordRead() : void
+  + recordWrite() : void
+  + recordHit() : void
+  + recordMiss() : void
+  + getReadAccesses() : int
+  + getWriteAccesses() : int
+  + getHits() : int
+  + getMisses() : int
+  + getMissRate() : double
+  + reset() : void
+}
 
-Processador "1" --> "1" ComponenteMemoria
+class AccessResult {
+  + bool hit
+  + int totalLatency
+  + AccessResult(bool hit, int latency)
+}
 
-Cache ..> PoliticaEscrita
-Cache ..> LinhaCache
-Processador ..> PadraoAcesso
-ComponenteMemoria ..> Estatisticas
-ComponenteMemoria ..> TipoAcesso
+Processor --> MemoryLevel : firstLevel
+Processor --> MemoryAccessPattern : uses
+
+MemoryHierarchy --> MemoryLevel : manages
+MemoryHierarchy --> Processor : controls
+
+MemoryAccessPattern <|-- SequentialPattern
+MemoryAccessPattern <|-- RandomPattern
+
+MemoryLevel <|-- Cache
+MemoryLevel <|-- MainMemory
+MemoryLevel --> MemoryLevel : nextLevel
+MemoryLevel *-- Statistics : has
+
+Cache *-- CacheSet : contains
+Cache --> WritePolicy : uses
+Cache --> LRUReplacer : uses
+
+CacheSet *-- CacheLine : contains
+
+WritePolicy <|-- WriteThroughPolicy
+WritePolicy <|-- WriteBackPolicy
+
+MemoryLevel ..> AccessResult : returns
 
 @enduml
