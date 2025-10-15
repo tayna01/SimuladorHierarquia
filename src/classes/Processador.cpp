@@ -21,19 +21,16 @@ void Processador::acessar_memoria(unsigned int endereco, TipoAcesso tipo)
     num_acessos++;
 }
 
-void Processador::executar_acessos(const std::vector<unsigned int> &enderecos, TipoAcesso tipo)
+/**
+ * realiza varios acessos a memoria em sequencia pelo metodo acessar_memria
+ * 
+ * recebe um vetor de endereços da memória e chama o método acessar_memoria para cada um deles
+ */
+void Processador::executar_acessos_sequencial(const std::vector<unsigned int> &enderecos, TipoAcesso tipo)
 {
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "Iniciando execucao de " << enderecos.size() << " acessos..." << std::endl;
-    std::cout << "========================================" << std::endl;
-
     for (unsigned int endereco : enderecos)
     {
         acessar_memoria(endereco, tipo);
     }
-
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "Execucao finalizada!" << std::endl;
-    std::cout << "========================================\n"
-              << std::endl;
 }
+

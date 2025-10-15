@@ -13,9 +13,11 @@ public:
 
     void acessar_memoria(unsigned int endereco, TipoAcesso tipo);
 
-    void executar_acessos(const std::vector<unsigned int> &enderecos, TipoAcesso tipo);
+    void executar_acessos_sequencial(const std::vector<unsigned int> &enderecos, TipoAcesso tipo);
 
-    //int obter_tempo_total() const;
+    // void executar_acessos_aleatorio(const std::vector<unsigned int> &enderecos, TipoAcesso tipo);
+
+    // int obter_tempo_total() const;
 
     //int obter_num_acessos() const;
 
